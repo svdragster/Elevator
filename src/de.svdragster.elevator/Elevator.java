@@ -5,13 +5,15 @@ import net.canarymod.plugin.Plugin;
 
 public class Elevator extends Plugin {
 
-  @Override
+	@Override
 	public void disable() {
 
 	}
 
 	@Override
 	public boolean enable() {
+		new ElevatorListener().createFiles();
+		new ElevatorListener().getProps();
 		Canary.hooks().registerListener(new ElevatorListener(), this);
 		return true;
 	}
