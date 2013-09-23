@@ -7,8 +7,8 @@ import net.canarymod.api.inventory.Item;
 import net.canarymod.api.inventory.ItemType;*/
 import net.canarymod.api.world.blocks.Block;
 import net.canarymod.api.world.blocks.BlockType;
-import net.canarymod.api.world.blocks.ComplexBlock;
 import net.canarymod.api.world.blocks.Sign;
+import net.canarymod.api.world.blocks.TileEntity;
 import net.canarymod.chat.Colors;
 import net.canarymod.hook.HookHandler;
 import net.canarymod.hook.player.BlockLeftClickHook;
@@ -17,9 +17,10 @@ import net.canarymod.hook.player.SignChangeHook;
 import net.canarymod.plugin.PluginListener;
 
 public class ElevatorListener implements PluginListener {
-  
+	
 	public static final String PERMISSION_PLACE = "elevator.place";
 	public static final String PERMISSION_USE = "elevator.use";
+	public static final String PERMISSION_DESTROY = "elevator.destroy";
 	public static final String SIGN_ELEVATOR = "[Elevator]";
 	public static final int TP_EYE = 1; //Teleport the player, so the Sign is at the height of the eyes of the player.
 	public static final int TP_BELOW = 2; //Teleport the player, so the Sign is at the height of the players legs or feet.
@@ -39,7 +40,7 @@ public class ElevatorListener implements PluginListener {
 				int PositionX = sign.getX(), PositionY = i, PositionZ = sign.getZ();
 				Block NeuerBlock = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY, PositionZ);
 				if (NeuerBlock.getType().equals(BlockType.WallSign)) {
-					ComplexBlock ComplexBlock = Canary.getServer().getDefaultWorld().getComplexBlockAt(PositionX, PositionY, PositionZ);
+					TileEntity ComplexBlock = Canary.getServer().getDefaultWorld().getTileEntityAt(PositionX, PositionY, PositionZ);
 					Sign OtherSign = (Sign) ComplexBlock;
 					if (OtherSign.getTextOnLine(1).equals(Colors.WHITE + SIGN_ELEVATOR)) {
 						Block BelowSign = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY-1, PositionZ);
@@ -74,7 +75,7 @@ public class ElevatorListener implements PluginListener {
 					int PositionX = sign.getX(), PositionY = i, PositionZ = sign.getZ();
 					Block NeuerBlock = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY, PositionZ);
 					if (NeuerBlock.getType().equals(BlockType.WallSign)) {
-						ComplexBlock ComplexBlock = Canary.getServer().getDefaultWorld().getComplexBlockAt(PositionX, PositionY, PositionZ);
+						TileEntity ComplexBlock = Canary.getServer().getDefaultWorld().getTileEntityAt(PositionX, PositionY, PositionZ);
 						Sign OtherSign = (Sign) ComplexBlock;
 						if (OtherSign.getTextOnLine(1).equals(Colors.WHITE + SIGN_ELEVATOR)) {
 							Block BelowSign = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY-1, PositionZ);
@@ -109,10 +110,10 @@ public class ElevatorListener implements PluginListener {
 	public void onBlockRightClick(BlockRightClickHook hook) {
 		if (hook.getBlockClicked().getType().equals(BlockType.WallSign)) {
 			if(hook.getPlayer().hasPermission(PERMISSION_USE)) {
-				ComplexBlock MyComplexBlock = Canary
+				TileEntity MyComplexBlock = Canary
 						.getServer()
 						.getDefaultWorld()
-						.getComplexBlockAt(hook.getBlockClicked().getX(),
+						.getTileEntityAt(hook.getBlockClicked().getX(),
 								hook.getBlockClicked().getY(),
 								hook.getBlockClicked().getZ());
 				Sign MySign = (Sign) MyComplexBlock;
@@ -139,13 +140,16 @@ public class ElevatorListener implements PluginListener {
 		//if (!HoldingItem.equals(WantedItem)) {
 		//if (!hook.getPlayer().getItemHeld().equals(ItemType.Diamond)) {
 		if (hook.getBlock().getType().equals(BlockType.WallSign)) {
+			if (hook.getPlayer().isSneaking()) {
+				if (hook.getPlayer().hasPermission(PERMISSION_DESTROY)) {
+					return;
+				} else {
+					hook.getPlayer().message(Colors.LIGHT_RED + "You don't have the permission to destroy an elevator sign.");
+				}
+			}
 			if (hook.getPlayer().hasPermission(PERMISSION_USE)) {
-				ComplexBlock MyComplexBlock = Canary
-						.getServer()
-						.getDefaultWorld()
-						.getComplexBlockAt(hook.getBlock().getX(),
-								hook.getBlock().getY(), hook.getBlock().getZ());
-				Sign MySign = (Sign) MyComplexBlock;
+				//TileEntity MyComplexBlock = Canary.getServer().getDefaultWorld().getTileEntityAt(hook.getBlock().getX(), hook.getBlock().getY(), hook.getBlock().getZ());
+				Sign MySign = (Sign) hook.getBlock().getTileEntity();
 				String SignSecondLine = MySign.getTextOnLine(1);
 				String SignThirdLine = MySign.getTextOnLine(2);
 				if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
