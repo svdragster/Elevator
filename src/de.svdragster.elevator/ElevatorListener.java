@@ -3,6 +3,7 @@ package de.svdragster.elevator;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -39,10 +40,14 @@ public class ElevatorListener implements PluginListener {
 	public static final int TP_BELOW = 2; //Teleport the player, so the Sign is at the height of the players legs or feet.
 	public static final int TP_CANCEL = 0; //Cancel the teleport.
 	private static final String USER_AGENT = "Minecraft Server " + Canary.getServer().getName();
-	public static final String VERSION = "1.3";
+	public static final String VERSION = "1.5";
 	private static final String DIR = "config/elevator/";
 	private static final String FILE = DIR + "elevator.properties";
 	public static boolean CheckForUpdates = false;
+	public static boolean Message_WelcomeToLevel = false;
+	public static boolean Message_CheckForUpdates = false;
+	public static boolean Message_NoUpdateAvailable = false;
+	public static boolean Message_UpdateAvailable = false;
 	public int WorldHeight = Canary.getServer().getDefaultWorld().getHeight();
 	boolean AlreadyTeleported = false;
 	
@@ -53,19 +58,50 @@ public class ElevatorListener implements PluginListener {
 	public void createFiles() {
 		File file = new File(FILE);
 		File dir = new File(DIR);
+		
 		Properties props = new Properties();
 		if (!dir.exists()) {
 			dir.mkdir();
 		}
 		if (!file.exists()) {
 			try {
-		        FileOutputStream out = new FileOutputStream(FILE);
-		        props.setProperty("CheckForUpdates", "true");
-		        props.store(out, null);
-		        out.close();
+				file.createNewFile();
 			} catch (IOException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}
+		try {
+			props.load(new FileInputStream(FILE));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+	        FileOutputStream out = new FileOutputStream(FILE);
+	        
+	        if (!props.containsKey("CheckForUpdates")) {
+	        	props.setProperty("CheckForUpdates", "true");
+	        }
+	        if (!props.containsKey("Message_WelcomeToLevel")) {
+	        	props.setProperty("Message_WelcomeToLevel", "true");
+	        }
+	        if (!props.containsKey("Message_CheckForUpdates")) {
+	        	props.setProperty("Message_CheckForUpdates", "true");
+	        }
+	        if (!props.containsKey("Message_NoUpdateAvailable")) {
+	        	props.setProperty("Message_NoUpdateAvailable", "true");
+	        }
+	        if (!props.containsKey("Message_UpdateAvailable")) {
+	        	props.setProperty("Message_UpdateAvailable", "true");
+	        }
+	        props.store(out, null);
+	        out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -75,9 +111,25 @@ public class ElevatorListener implements PluginListener {
                //load a properties file
     		prop.load(new FileInputStream(FILE));
                //get the property value
-    		String property = prop.getProperty("CheckForUpdates");
-    		if (property.equalsIgnoreCase("true")) {
+    		String checkUpdates = prop.getProperty("CheckForUpdates");
+    		String messageLevel = prop.getProperty("Message_WelcomeToLevel");
+    		String messageCheckUpdates = prop.getProperty("Message_CheckForUpdates");
+    		String messageNoUpdateAvailable = prop.getProperty("Message_NoUpdateAvailable");
+    		String messageUpdateAvailable = prop.getProperty("Message_UpdateAvailable");
+    		if (checkUpdates.equalsIgnoreCase("true")) {
     			CheckForUpdates = true;
+    		}
+    		if (messageLevel.equalsIgnoreCase("true")) {
+    			Message_WelcomeToLevel = true;
+    		}
+    		if (messageCheckUpdates.equalsIgnoreCase("true")) {
+    			Message_CheckForUpdates = true;
+    		}
+    		if (messageUpdateAvailable.equalsIgnoreCase("true")) {
+    			Message_UpdateAvailable = true;
+    		}
+    		if (messageNoUpdateAvailable.equalsIgnoreCase("true")) {
+    			Message_NoUpdateAvailable = true;
     		}
     	} catch (IOException ex) {
     		ex.printStackTrace();
@@ -90,18 +142,20 @@ public class ElevatorListener implements PluginListener {
 			for (int i=SignY+1; i<=WorldHeight; i++) {
 				//Block RelativeBlock = sign.getBlock().getPosition().;//getRelative(sign.getBlock().getX(), i, sign.getBlock().getZ());
 				int PositionX = sign.getX(), PositionY = i, PositionZ = sign.getZ();
-				Block NeuerBlock = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY, PositionZ);
+				Block NeuerBlock = player.getWorld().getBlockAt(PositionX, PositionY, PositionZ);
 				if (NeuerBlock.getType().equals(BlockType.WallSign)) {
-					TileEntity ComplexBlock = Canary.getServer().getDefaultWorld().getTileEntityAt(PositionX, PositionY, PositionZ);
+					TileEntity ComplexBlock = player.getWorld().getTileEntityAt(PositionX, PositionY, PositionZ);
 					Sign OtherSign = (Sign) ComplexBlock;
 					if (OtherSign.getTextOnLine(1).equals(Colors.WHITE + SIGN_ELEVATOR)) {
-						Block BelowSign = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY-1, PositionZ);
-						Block AboveSign = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY+1, PositionZ);
+						Block BelowSign = player.getWorld().getBlockAt(PositionX, PositionY-1, PositionZ);
+						Block AboveSign = player.getWorld().getBlockAt(PositionX, PositionY+1, PositionZ);
 						if (BelowSign.isAir()) {
 							//TP_EYE
 							player.teleportTo(PositionX+0.5, PositionY-1, PositionZ+0.5, player.getPitch(), player.getRotation());
 							if (!OtherSign.getTextOnLine(0).isEmpty()) {
-								player.message(Colors.LIGHT_GREEN + "Welcome to level " + OtherSign.getTextOnLine(0));
+								if (Message_WelcomeToLevel) {
+									player.message(Colors.LIGHT_GREEN + "Welcome to level " + OtherSign.getTextOnLine(0));
+								}
 							}
 							return;
 						} else {
@@ -125,13 +179,13 @@ public class ElevatorListener implements PluginListener {
 				for (int i=SignY-1; i>1; i--) {
 					//Block RelativeBlock = sign.getBlock().getPosition().;//getRelative(sign.getBlock().getX(), i, sign.getBlock().getZ());
 					int PositionX = sign.getX(), PositionY = i, PositionZ = sign.getZ();
-					Block NeuerBlock = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY, PositionZ);
+					Block NeuerBlock = player.getWorld().getBlockAt(PositionX, PositionY, PositionZ);
 					if (NeuerBlock.getType().equals(BlockType.WallSign)) {
-						TileEntity ComplexBlock = Canary.getServer().getDefaultWorld().getTileEntityAt(PositionX, PositionY, PositionZ);
+						TileEntity ComplexBlock = player.getWorld().getTileEntityAt(PositionX, PositionY, PositionZ);
 						Sign OtherSign = (Sign) ComplexBlock;
 						if (OtherSign.getTextOnLine(1).equals(Colors.WHITE + SIGN_ELEVATOR)) {
-							Block BelowSign = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY-1, PositionZ);
-							Block AboveSign = Canary.getServer().getDefaultWorld().getBlockAt(PositionX, PositionY+1, PositionZ);
+							Block BelowSign = player.getWorld().getBlockAt(PositionX, PositionY-1, PositionZ);
+							Block AboveSign = player.getWorld().getBlockAt(PositionX, PositionY+1, PositionZ);
 							if (BelowSign.isAir()) {
 								//TP_EYE
 								player.teleportTo(PositionX+0.5, PositionY-1, PositionZ+0.5, player.getPitch(), player.getRotation());
@@ -162,10 +216,7 @@ public class ElevatorListener implements PluginListener {
 	public void onBlockRightClick(BlockRightClickHook hook) {
 		if (hook.getBlockClicked().getType().equals(BlockType.WallSign)) {
 			if(hook.getPlayer().hasPermission(PERMISSION_USE)) {
-				TileEntity MyComplexBlock = Canary
-						.getServer()
-						.getDefaultWorld()
-						.getTileEntityAt(hook.getBlockClicked().getX(),
+				TileEntity MyComplexBlock = hook.getBlockClicked().getWorld().getTileEntityAt(hook.getBlockClicked().getX(),
 								hook.getBlockClicked().getY(),
 								hook.getBlockClicked().getZ());
 				Sign MySign = (Sign) MyComplexBlock;
@@ -242,8 +293,20 @@ public class ElevatorListener implements PluginListener {
 		if (CheckForUpdates) {
 			if (hook.getPlayer().hasPermission(PERMISSION_UPDATE)) {
 				try {
-					hook.getPlayer().message(Colors.ORANGE + "<Elevator> " + Colors.LIGHT_GRAY + "Checking for updates...");
-					hook.getPlayer().message(sendGet());
+					if (Message_CheckForUpdates) {
+						hook.getPlayer().message(Colors.ORANGE + "<Elevator> " + Colors.LIGHT_GRAY + "Checking for updates...");
+					}
+					String result = sendGet();
+					if (result.equalsIgnoreCase(Colors.ORANGE + "<Elevator> " + Colors.LIGHT_RED + "No update available")) {
+						if (Message_NoUpdateAvailable) {
+							hook.getPlayer().message(result);
+						}
+					}
+					if (result.contains("Update available at")) {
+						if (Message_UpdateAvailable) {
+							hook.getPlayer().message(result);
+						}
+					}
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -255,7 +318,7 @@ public class ElevatorListener implements PluginListener {
 	public String sendGet() throws Exception {
 		String MYIDSTART = "svdragster>";
 		String MYIDEND = "<svdragster";
-		String url = "http://svcounter.comze.com/checkupdate.php?version=" + VERSION + "&plugin=elevator";
+		String url = "http://sv.slyip.net/checkupdate.php?version=" + VERSION + "&plugin=elevator";
  
 		URL obj = new URL(url);
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
