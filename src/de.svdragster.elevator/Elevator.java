@@ -7,7 +7,7 @@ public class Elevator extends Plugin {
 
 	@Override
 	public void disable() {
-
+		//Nothing needed here
 	}
 
 	@Override
