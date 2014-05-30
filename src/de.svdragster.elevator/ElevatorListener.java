@@ -13,9 +13,6 @@ import java.util.Properties;
 
 import net.canarymod.Canary;
 import net.canarymod.api.entity.living.humanoid.Player;
-/*import net.canarymod.api.factory.ItemFactory;
-import net.canarymod.api.inventory.Item;
-import net.canarymod.api.inventory.ItemType;*/
 import net.canarymod.api.world.blocks.Block;
 import net.canarymod.api.world.blocks.BlockType;
 import net.canarymod.api.world.blocks.Sign;
@@ -26,7 +23,6 @@ import net.canarymod.hook.player.BlockLeftClickHook;
 import net.canarymod.hook.player.BlockRightClickHook;
 import net.canarymod.hook.player.ConnectionHook;
 import net.canarymod.hook.player.SignChangeHook;
-import net.canarymod.plugin.Plugin;
 import net.canarymod.plugin.PluginListener;
 
 public class ElevatorListener implements PluginListener {
@@ -40,7 +36,7 @@ public class ElevatorListener implements PluginListener {
 	public static final int TP_BELOW = 2; //Teleport the player, so the Sign is at the height of the players legs or feet.
 	public static final int TP_CANCEL = 0; //Cancel the teleport.
 	private static final String USER_AGENT = "Minecraft Server " + Canary.getServer().getName();
-	public static final String VERSION = "1.5";
+	public static final String VERSION = "1.52";
 	private static final String DIR = "config/elevator/";
 	private static final String FILE = DIR + "elevator.properties";
 	public static boolean CheckForUpdates = false;
@@ -49,7 +45,6 @@ public class ElevatorListener implements PluginListener {
 	public static boolean Message_NoUpdateAvailable = false;
 	public static boolean Message_UpdateAvailable = false;
 	public int WorldHeight = Canary.getServer().getDefaultWorld().getHeight();
-	boolean AlreadyTeleported = false;
 	
 	public void cast(String string) {
 		Canary.getServer().broadcastMessage(string);
@@ -67,17 +62,14 @@ public class ElevatorListener implements PluginListener {
 			try {
 				file.createNewFile();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		try {
 			props.load(new FileInputStream(FILE));
 		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		try {
@@ -140,7 +132,6 @@ public class ElevatorListener implements PluginListener {
 		if (direction == "up") {
 			int SignY = sign.getY();
 			for (int i=SignY+1; i<=WorldHeight; i++) {
-				//Block RelativeBlock = sign.getBlock().getPosition().;//getRelative(sign.getBlock().getX(), i, sign.getBlock().getZ());
 				int PositionX = sign.getX(), PositionY = i, PositionZ = sign.getZ();
 				Block NeuerBlock = player.getWorld().getBlockAt(PositionX, PositionY, PositionZ);
 				if (NeuerBlock.getType().equals(BlockType.WallSign)) {
@@ -160,7 +151,6 @@ public class ElevatorListener implements PluginListener {
 							return;
 						} else {
 							if (AboveSign.isAir()) {
-								//return TP_BELOW;
 								player.teleportTo(PositionX+0.5, PositionY, PositionZ+0.5, player.getPitch(), player.getRotation());
 								if (!OtherSign.getTextOnLine(0).isEmpty()) {
 									player.message(Colors.LIGHT_GREEN + "Welcome to level " + OtherSign.getTextOnLine(0));
@@ -215,10 +205,8 @@ public class ElevatorListener implements PluginListener {
 	@HookHandler
 	public void onBlockRightClick(BlockRightClickHook hook) {
 		if (hook.getBlockClicked().getType().equals(BlockType.WallSign)) {
-			if(hook.getPlayer().hasPermission(PERMISSION_USE)) {
-				TileEntity MyComplexBlock = hook.getBlockClicked().getWorld().getTileEntityAt(hook.getBlockClicked().getX(),
-								hook.getBlockClicked().getY(),
-								hook.getBlockClicked().getZ());
+			if (hook.getPlayer().hasPermission(PERMISSION_USE)) {
+				TileEntity MyComplexBlock = hook.getBlockClicked().getWorld().getTileEntityAt(hook.getBlockClicked().getX(), hook.getBlockClicked().getY(), hook.getBlockClicked().getZ());
 				Sign MySign = (Sign) MyComplexBlock;
 				String SignSecondLine = MySign.getTextOnLine(1);
 				String SignThirdLine = MySign.getTextOnLine(2);
@@ -228,7 +216,6 @@ public class ElevatorListener implements PluginListener {
 					} else {
 						CheckForElevator(MySign, "up", hook.getPlayer());
 					}
-					// CheckForElevator(MySign, "up", hook.getPlayer());
 				}
 			}
 		}
@@ -236,35 +223,35 @@ public class ElevatorListener implements PluginListener {
 	
 	@HookHandler
 	public void onBlockLeftClick(BlockLeftClickHook hook) {
-		//cast("isSneaking: " + hook.getPlayer().isSneaking());
-		/*ItemFactory MyItemFactory = Canary.factory().getItemFactory();
-		Item HoldingItem = hook.getPlayer().getItemHeld();
-		Item WantedItem =  MyItemFactory.newItem(264);*/
-		//if (!HoldingItem.equals(WantedItem)) {
-		//if (!hook.getPlayer().getItemHeld().equals(ItemType.Diamond)) {
-		if (hook.getBlock().getType().equals(BlockType.WallSign)) {
-			if (hook.getPlayer().isSneaking()) {
-				if (hook.getPlayer().hasPermission(PERMISSION_DESTROY)) {
-					hook.getPlayer().message(Colors.GREEN + "Sign is destroyed.");
-					return;
-				} else {
-					hook.getPlayer().message(Colors.LIGHT_RED + "You don't have the permission to destroy an elevator sign.");
-				}
-			}
-			if (hook.getPlayer().hasPermission(PERMISSION_USE)) {
-				//TileEntity MyComplexBlock = Canary.getServer().getDefaultWorld().getTileEntityAt(hook.getBlock().getX(), hook.getBlock().getY(), hook.getBlock().getZ());
-				Sign MySign = (Sign) hook.getBlock().getTileEntity();
-				String SignSecondLine = MySign.getTextOnLine(1);
-				String SignThirdLine = MySign.getTextOnLine(2);
-				if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
-					if (SignThirdLine.equalsIgnoreCase("up")) {
-						CheckForElevator(MySign, "up", hook.getPlayer());
-					} else {
-						CheckForElevator(MySign, "down", hook.getPlayer());
+		if (hook.getBlock().getType() != null) {
+			if (hook.getBlock().getType().equals(BlockType.WallSign)) {
+				if (hook.getPlayer().isSneaking()) {
+					Sign MySign = (Sign) hook.getBlock().getTileEntity();
+					String SignSecondLine = MySign.getTextOnLine(1);
+					if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+						hook.setCanceled();
+						if (hook.getPlayer().hasPermission(PERMISSION_DESTROY)) {
+							hook.getPlayer().message(Colors.GREEN + "Sign is destroyed.");
+							return;
+						} else {
+							hook.getPlayer().message(Colors.LIGHT_RED + "You don't have the permission to destroy an elevator sign.");
+						}
 					}
-					hook.setCanceled();
 				}
-				MySign.update();
+				if (hook.getPlayer().hasPermission(PERMISSION_USE)) {
+					Sign MySign = (Sign) hook.getBlock().getTileEntity();
+					String SignSecondLine = MySign.getTextOnLine(1);
+					String SignThirdLine = MySign.getTextOnLine(2);
+					if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+						if (SignThirdLine.equalsIgnoreCase("up")) {
+							CheckForElevator(MySign, "up", hook.getPlayer());
+						} else {
+							CheckForElevator(MySign, "down", hook.getPlayer());
+						}
+						hook.setCanceled();
+					}
+					MySign.update();
+				}
 			}
 		}
 	}
@@ -308,7 +295,6 @@ public class ElevatorListener implements PluginListener {
 						}
 					}
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -329,7 +315,6 @@ public class ElevatorListener implements PluginListener {
 		//add request header
 		con.setRequestProperty("User-Agent", USER_AGENT);
  
-		//int responseCode = con.getResponseCode();
 		BufferedReader in = new BufferedReader(
 		        new InputStreamReader(con.getInputStream()));
 		String inputLine;
@@ -342,14 +327,11 @@ public class ElevatorListener implements PluginListener {
  
 		String result = response.toString();
 		if (result.contains(MYIDSTART) && result.contains(MYIDEND)) {
-			//result.replace(MYIDSTART, "");
 			int endPos = result.indexOf(MYIDEND);
 			result = Colors.ORANGE + "<Elevator> " + Colors.GREEN + "Update available at: " + Colors.WHITE + result.substring(MYIDSTART.length(), endPos);
 		} else {
 			result = Colors.ORANGE + "<Elevator> " + Colors.LIGHT_RED + "No update available";
 		}
-		
-		//return result
 		return result;
  
 	}
