@@ -10,19 +10,25 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Properties;
+import java.util.Timer;
 
 import net.canarymod.Canary;
 import net.canarymod.api.entity.living.humanoid.Player;
+import net.canarymod.api.factory.PacketFactory;
+import net.canarymod.api.packet.Packet;
 import net.canarymod.api.world.blocks.Block;
 import net.canarymod.api.world.blocks.BlockType;
 import net.canarymod.api.world.blocks.Sign;
 import net.canarymod.api.world.blocks.TileEntity;
 import net.canarymod.chat.Colors;
+import net.canarymod.chat.TextFormat;
 import net.canarymod.hook.HookHandler;
 import net.canarymod.hook.player.BlockLeftClickHook;
 import net.canarymod.hook.player.BlockRightClickHook;
 import net.canarymod.hook.player.ConnectionHook;
+import net.canarymod.hook.player.PlayerMoveHook;
 import net.canarymod.hook.player.SignChangeHook;
+import net.canarymod.hook.player.TeleportHook;
 import net.canarymod.plugin.PluginListener;
 
 public class ElevatorListener implements PluginListener {
@@ -36,7 +42,7 @@ public class ElevatorListener implements PluginListener {
 	public static final int TP_BELOW = 2; //Teleport the player, so the Sign is at the height of the players legs or feet.
 	public static final int TP_CANCEL = 0; //Cancel the teleport.
 	private static final String USER_AGENT = "Minecraft Server " + Canary.getServer().getName();
-	public static final String VERSION = "1.52";
+	public static final String VERSION = new Elevator().getVersion();
 	private static final String DIR = "config/elevator/";
 	private static final String FILE = DIR + "elevator.properties";
 	public static boolean CheckForUpdates = false;
@@ -44,7 +50,17 @@ public class ElevatorListener implements PluginListener {
 	public static boolean Message_CheckForUpdates = false;
 	public static boolean Message_NoUpdateAvailable = false;
 	public static boolean Message_UpdateAvailable = false;
-	public int WorldHeight = Canary.getServer().getDefaultWorld().getHeight();
+	public static int WorldHeight = Canary.getServer().getDefaultWorld().getHeight();
+	
+	public static boolean isNumeric(String str) {  
+		try {  
+			@SuppressWarnings("unused")
+			double d = Double.parseDouble(str);  
+		} catch (NumberFormatException nfe) {  
+			return false;  
+		}  
+		return true;  
+	}
 	
 	public void cast(String string) {
 		Canary.getServer().broadcastMessage(string);
@@ -210,11 +226,26 @@ public class ElevatorListener implements PluginListener {
 				Sign MySign = (Sign) MyComplexBlock;
 				String SignSecondLine = MySign.getTextOnLine(1);
 				String SignThirdLine = MySign.getTextOnLine(2);
-				if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
-					if (SignThirdLine.equalsIgnoreCase("down")) {
-						CheckForElevator(MySign, "down", hook.getPlayer());
-					} else {
-						CheckForElevator(MySign, "up", hook.getPlayer());
+				String SignFourthLine = TextFormat.removeFormatting(MySign.getTextOnLine(3));
+				if (!SignFourthLine.isEmpty()) {
+					for (int i=(int) MySign.getY()+1; i<=WorldHeight; i++) {
+						if (hook.getPlayer().getWorld().getBlockAt((int) hook.getPlayer().getX(), i, (int) hook.getPlayer().getZ()).getType().equals(BlockType.WallSign)) {
+							int v = 1;//Integer.parseInt(SignFourthLine);
+							ElevatorTimer task = new ElevatorTimer();
+							task.setPlayer(hook.getPlayer());
+							task.setDirection(1);
+					    	Timer timer = new Timer();
+					    	timer.schedule(task, 100, v*100);
+					    	return;
+						}
+					}			
+				} else {
+					if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+						if (SignThirdLine.equalsIgnoreCase("down")) {
+							CheckForElevator(MySign, "down", hook.getPlayer());
+						} else {
+							CheckForElevator(MySign, "up", hook.getPlayer());
+						}
 					}
 				}
 			}
@@ -229,28 +260,46 @@ public class ElevatorListener implements PluginListener {
 					Sign MySign = (Sign) hook.getBlock().getTileEntity();
 					String SignSecondLine = MySign.getTextOnLine(1);
 					if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
-						hook.setCanceled();
 						if (hook.getPlayer().hasPermission(PERMISSION_DESTROY)) {
-							hook.getPlayer().message(Colors.GREEN + "Sign is destroyed.");
+							hook.getPlayer().message(Colors.GREEN + "Sign destroyed.");
 							return;
 						} else {
 							hook.getPlayer().message(Colors.LIGHT_RED + "You don't have the permission to destroy an elevator sign.");
+							hook.setCanceled();
 						}
 					}
 				}
-				if (hook.getPlayer().hasPermission(PERMISSION_USE)) {
-					Sign MySign = (Sign) hook.getBlock().getTileEntity();
-					String SignSecondLine = MySign.getTextOnLine(1);
-					String SignThirdLine = MySign.getTextOnLine(2);
-					if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
-						if (SignThirdLine.equalsIgnoreCase("up")) {
-							CheckForElevator(MySign, "up", hook.getPlayer());
-						} else {
-							CheckForElevator(MySign, "down", hook.getPlayer());
-						}
+				Sign MySign = (Sign) hook.getBlock().getTileEntity();
+				String SignSecondLine = MySign.getTextOnLine(1);
+				if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+					if (hook.getPlayer().hasPermission(PERMISSION_USE)) {
 						hook.setCanceled();
+						String SignThirdLine = MySign.getTextOnLine(2);
+						String SignFourthLine = TextFormat.removeFormatting(MySign.getTextOnLine(3));
+						if (isNumeric(SignFourthLine)) {
+							for (int i=(int) MySign.getY()-1; i>0; i--) {
+								if (hook.getPlayer().getWorld().getBlockAt((int) hook.getPlayer().getX(), i, (int) hook.getPlayer().getZ()).getType().equals(BlockType.WallSign)) {
+									int v = Integer.parseInt(SignFourthLine);
+									ElevatorTimer task = new ElevatorTimer();
+									task.setPlayer(hook.getPlayer());
+									task.setDirection(-1);
+							    	Timer timer = new Timer();
+							    	timer.schedule(task, 100, v*100);
+							    	return;
+								}
+							}
+						} else {
+							if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+								if (SignThirdLine.equalsIgnoreCase("up")) {
+									CheckForElevator(MySign, "up", hook.getPlayer());
+								} else {
+									CheckForElevator(MySign, "down", hook.getPlayer());
+								}
+								hook.setCanceled();
+							}
+							MySign.update();
+						}
 					}
-					MySign.update();
 				}
 			}
 		}
@@ -276,6 +325,58 @@ public class ElevatorListener implements PluginListener {
 	}
 	
 	@HookHandler
+	public void onPlayerMove(PlayerMoveHook hook) {
+		Player player = hook.getPlayer();
+		if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY()+1, (int) player.getZ()).getType().equals(BlockType.WallSign)) {
+			Sign sign = (Sign) player.getWorld().getTileEntityAt((int) player.getX(), (int) player.getY()+1, (int) player.getZ());
+			String str = TextFormat.removeFormatting(sign.getTextOnLine(3));
+			if (isNumeric(str)) {
+				PacketFactory factory = Canary.factory().getPacketFactory();
+				Packet packet = factory.blockChange((int) player.getX(), (int) player.getY()-1, (int) player.getZ(), 20, 0);
+				player.sendPacket(packet);
+			}
+		}
+		if (player.getWorld().getBlockAt((int) hook.getFrom().getX(), (int) hook.getFrom().getY()+1, (int) hook.getFrom().getZ()).getType().equals(BlockType.WallSign)) {
+			Sign sign = (Sign) player.getWorld().getTileEntityAt((int) hook.getFrom().getX(), (int) hook.getFrom().getY()+1, (int) hook.getFrom().getZ());
+			String str = TextFormat.removeFormatting(sign.getTextOnLine(3));
+			if (isNumeric(str)) {
+				PacketFactory factory = Canary.factory().getPacketFactory();
+				Packet packet = factory.blockChange((int) hook.getFrom().getX(), (int) hook.getFrom().getY()-1, (int) hook.getFrom().getZ(), 0, 0);
+				player.sendPacket(packet);
+			}
+		}
+	}
+	
+	@HookHandler
+	public void onTeleport(TeleportHook hook) {
+		Player player = hook.getPlayer();
+		if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY(), (int) player.getZ()).getType().equals(BlockType.WallSign)) {
+			PacketFactory factory = Canary.factory().getPacketFactory();
+			Packet packet = factory.blockChange((int) player.getX(), (int) player.getY()-2, (int) player.getZ(), 0, 0);
+			player.sendPacket(packet);
+		}
+		if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY()+2, (int) player.getZ()).getType().equals(BlockType.WallSign)) {
+			PacketFactory factory = Canary.factory().getPacketFactory();
+			Packet packet = factory.blockChange((int) player.getX(), (int) player.getY(), (int) player.getZ(), 0, 0);
+			player.sendPacket(packet);
+		}
+		if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY()+3, (int) player.getZ()).getType().equals(BlockType.WallSign)) {
+			PacketFactory factory = Canary.factory().getPacketFactory();
+			Packet packet = factory.blockChange((int) player.getX(), (int) player.getY()+1, (int) player.getZ(), 0, 0);
+			player.sendPacket(packet);
+		}
+		if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY()+1, (int) player.getZ()).getType().equals(BlockType.WallSign)) {
+			Sign sign = (Sign) player.getWorld().getTileEntityAt((int) player.getX(), (int) player.getY()+1, (int) player.getZ());
+			String str = TextFormat.removeFormatting(sign.getTextOnLine(3));
+			if (isNumeric(str)) {
+				PacketFactory factory = Canary.factory().getPacketFactory();
+				Packet packet = factory.blockChange((int) player.getX(), (int) player.getY()-1, (int) player.getZ(), 20, 0);
+				player.sendPacket(packet);
+			}
+		}
+	}
+	
+	@HookHandler
 	public void onLogin(ConnectionHook hook) {
 		if (CheckForUpdates) {
 			if (hook.getPlayer().hasPermission(PERMISSION_UPDATE)) {
@@ -284,7 +385,7 @@ public class ElevatorListener implements PluginListener {
 						hook.getPlayer().message(Colors.ORANGE + "<Elevator> " + Colors.LIGHT_GRAY + "Checking for updates...");
 					}
 					String result = sendGet();
-					if (result.equalsIgnoreCase(Colors.ORANGE + "<Elevator> " + Colors.LIGHT_RED + "No update available")) {
+					if (result.equalsIgnoreCase(Colors.ORANGE + "<Elevator> " + Colors.LIGHT_RED + "No update available.")) {
 						if (Message_NoUpdateAvailable) {
 							hook.getPlayer().message(result);
 						}
