@@ -28,7 +28,6 @@ import net.canarymod.hook.player.BlockRightClickHook;
 import net.canarymod.hook.player.ConnectionHook;
 import net.canarymod.hook.player.PlayerMoveHook;
 import net.canarymod.hook.player.SignChangeHook;
-import net.canarymod.hook.player.TeleportHook;
 import net.canarymod.plugin.PluginListener;
 
 public class ElevatorListener implements PluginListener {
@@ -279,9 +278,13 @@ public class ElevatorListener implements PluginListener {
 						if (isNumeric(SignFourthLine)) {
 							for (int i=(int) MySign.getY()-1; i>0; i--) {
 								if (hook.getPlayer().getWorld().getBlockAt((int) hook.getPlayer().getX(), i, (int) hook.getPlayer().getZ()).getType().equals(BlockType.WallSign)) {
+									PacketFactory factory = Canary.factory().getPacketFactory();
+									Player player = hook.getPlayer();
+									Packet packet = factory.blockChange((int) player.getX(), (int) player.getY()-1, (int) player.getZ(), 0, 0);
+									player.sendPacket(packet);
 									int v = Integer.parseInt(SignFourthLine);
 									ElevatorTimer task = new ElevatorTimer();
-									task.setPlayer(hook.getPlayer());
+									task.setPlayer(player);
 									task.setDirection(-1);
 							    	Timer timer = new Timer();
 							    	timer.schedule(task, 100, v*100);
@@ -345,11 +348,6 @@ public class ElevatorListener implements PluginListener {
 				player.sendPacket(packet);
 			}
 		}
-	}
-	
-	@HookHandler
-	public void onTeleport(TeleportHook hook) {
-		Player player = hook.getPlayer();
 		if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY(), (int) player.getZ()).getType().equals(BlockType.WallSign)) {
 			PacketFactory factory = Canary.factory().getPacketFactory();
 			Packet packet = factory.blockChange((int) player.getX(), (int) player.getY()-2, (int) player.getZ(), 0, 0);
@@ -375,6 +373,32 @@ public class ElevatorListener implements PluginListener {
 			}
 		}
 	}
+	
+	/*@HookHandler
+	public void onDamage(DamageHook hook) {
+		Canary.getServer().broadcastMessage("damage");
+		if (hook.getDefender().isPlayer()) {
+			Canary.getServer().broadcastMessage("player");
+			Player player = (Player) hook.getDefender();
+			if (hook.getDamageSource() != null) {
+				Canary.getServer().broadcastMessage("source");
+				if (hook.getDamageSource().getDamagetype() != null) {
+					Canary.getServer().broadcastMessage("damagetype");
+					if (hook.getDamageSource().getDamagetype().equals(DamageType.FALL)) {
+						Canary.getServer().broadcastMessage("fall");
+						if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY(), (int) player.getZ()).getType().equals(BlockType.WallSign)) {
+							Canary.getServer().broadcastMessage("1");
+							hook.setCanceled();
+						}
+						if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY()-1, (int) player.getZ()).getType().equals(BlockType.WallSign)) {
+							Canary.getServer().broadcastMessage("2");
+							hook.setCanceled();
+						}
+					}
+				}
+			}
+		}
+	}*/
 	
 	@HookHandler
 	public void onLogin(ConnectionHook hook) {
