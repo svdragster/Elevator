@@ -13,15 +13,16 @@ import java.util.Properties;
 import java.util.Timer;
 
 import net.canarymod.Canary;
+import net.canarymod.api.chat.ChatComponent;
 import net.canarymod.api.entity.living.humanoid.Player;
+import net.canarymod.api.factory.ChatComponentFactory;
 import net.canarymod.api.factory.PacketFactory;
 import net.canarymod.api.packet.Packet;
 import net.canarymod.api.world.blocks.Block;
 import net.canarymod.api.world.blocks.BlockType;
 import net.canarymod.api.world.blocks.Sign;
 import net.canarymod.api.world.blocks.TileEntity;
-import net.canarymod.chat.Colors;
-import net.canarymod.chat.TextFormat;
+import net.canarymod.chat.ChatFormat;
 import net.canarymod.hook.HookHandler;
 import net.canarymod.hook.player.BlockLeftClickHook;
 import net.canarymod.hook.player.BlockRightClickHook;
@@ -152,27 +153,29 @@ public class ElevatorListener implements PluginListener {
 				if (NeuerBlock.getType().equals(BlockType.WallSign)) {
 					TileEntity ComplexBlock = player.getWorld().getTileEntityAt(PositionX, PositionY, PositionZ);
 					Sign OtherSign = (Sign) ComplexBlock;
-					if (OtherSign.getTextOnLine(1).equals(Colors.WHITE + SIGN_ELEVATOR)) {
+					if (OtherSign.getComponentOnLine(1).getText().equals(ChatFormat.WHITE + SIGN_ELEVATOR)) {
 						Block BelowSign = player.getWorld().getBlockAt(PositionX, PositionY-1, PositionZ);
 						Block AboveSign = player.getWorld().getBlockAt(PositionX, PositionY+1, PositionZ);
 						if (BelowSign.isAir()) {
 							//TP_EYE
 							player.teleportTo(PositionX+0.5, PositionY-1, PositionZ+0.5, player.getPitch(), player.getRotation());
-							if (!OtherSign.getTextOnLine(0).isEmpty()) {
+							if (!OtherSign.getComponentOnLine(0).getText().isEmpty()) {
 								if (Message_WelcomeToLevel) {
-									player.message(Colors.LIGHT_GREEN + "Welcome to level " + OtherSign.getTextOnLine(0));
+									player.message(ChatFormat.GREEN + "Welcome to level " + OtherSign.getComponentOnLine(0).getText());
 								}
 							}
 							return;
 						} else {
 							if (AboveSign.isAir()) {
 								player.teleportTo(PositionX+0.5, PositionY, PositionZ+0.5, player.getPitch(), player.getRotation());
-								if (!OtherSign.getTextOnLine(0).isEmpty()) {
-									player.message(Colors.LIGHT_GREEN + "Welcome to level " + OtherSign.getTextOnLine(0));
+								if (!OtherSign.getComponentOnLine(0).getText().isEmpty()) {
+									if (Message_WelcomeToLevel) {
+										player.message(ChatFormat.GREEN + "Welcome to level " + OtherSign.getComponentOnLine(0).getText());
+									}
 								}
 								return;
 							} else {
-								player.message(Colors.LIGHT_RED + "You would be obstructed and die from the pain!");
+								player.message(ChatFormat.RED + "You would be obstructed and die from the pain!");
 							}
 						}
 					}
@@ -188,26 +191,30 @@ public class ElevatorListener implements PluginListener {
 					if (NeuerBlock.getType().equals(BlockType.WallSign)) {
 						TileEntity ComplexBlock = player.getWorld().getTileEntityAt(PositionX, PositionY, PositionZ);
 						Sign OtherSign = (Sign) ComplexBlock;
-						if (OtherSign.getTextOnLine(1).equals(Colors.WHITE + SIGN_ELEVATOR)) {
+						if (OtherSign.getComponentOnLine(1).getText().equals(ChatFormat.WHITE + SIGN_ELEVATOR)) {
 							Block BelowSign = player.getWorld().getBlockAt(PositionX, PositionY-1, PositionZ);
 							Block AboveSign = player.getWorld().getBlockAt(PositionX, PositionY+1, PositionZ);
 							if (BelowSign.isAir()) {
 								//TP_EYE
 								player.teleportTo(PositionX+0.5, PositionY-1, PositionZ+0.5, player.getPitch(), player.getRotation());
-								if (!OtherSign.getTextOnLine(0).isEmpty()) {
-									player.message(Colors.LIGHT_GREEN + "Welcome to level " + OtherSign.getTextOnLine(0));
+								if (!OtherSign.getComponentOnLine(0).getText().isEmpty()) {
+									if (Message_WelcomeToLevel) {
+										player.message(ChatFormat.GREEN + "Welcome to level " + OtherSign.getComponentOnLine(0).getText());
+									}
 								}
 								return;
 							} else {
 								if (AboveSign.isAir()) {
 									//return TP_BELOW;
 									player.teleportTo(PositionX+0.5, PositionY, PositionZ+0.5, player.getPitch(), player.getRotation());
-									if (!OtherSign.getTextOnLine(0).isEmpty()) {
-										player.message(Colors.LIGHT_GREEN + "Welcome to level " + OtherSign.getTextOnLine(0));
+									if (!OtherSign.getComponentOnLine(0).getText().isEmpty()) {
+										if (Message_WelcomeToLevel) {
+											player.message(ChatFormat.GREEN + "Welcome to level " + OtherSign.getComponentOnLine(0).getText());
+										}
 									}
 									return;
 								} else {
-									player.message(Colors.LIGHT_RED + "You would be obstructed and die from the pain!");
+									player.message(ChatFormat.RED + "You would be obstructed and die from the pain!");
 								}
 							}
 						}
@@ -223,9 +230,9 @@ public class ElevatorListener implements PluginListener {
 			if (hook.getPlayer().hasPermission(PERMISSION_USE)) {
 				TileEntity MyComplexBlock = hook.getBlockClicked().getWorld().getTileEntityAt(hook.getBlockClicked().getX(), hook.getBlockClicked().getY(), hook.getBlockClicked().getZ());
 				Sign MySign = (Sign) MyComplexBlock;
-				String SignSecondLine = MySign.getTextOnLine(1);
-				String SignThirdLine = MySign.getTextOnLine(2);
-				String SignFourthLine = TextFormat.removeFormatting(MySign.getTextOnLine(3));
+				String SignSecondLine = MySign.getComponentOnLine(1).getText();
+				String SignThirdLine = MySign.getComponentOnLine(2).getText();
+				String SignFourthLine = ChatFormat.removeFormatting(MySign.getComponentOnLine(3).getText());
 				if (!SignFourthLine.isEmpty()) {
 					for (int i=(int) MySign.getY()+1; i<=WorldHeight; i++) {
 						if (hook.getPlayer().getWorld().getBlockAt((int) hook.getPlayer().getX(), i, (int) hook.getPlayer().getZ()).getType().equals(BlockType.WallSign)) {
@@ -239,7 +246,7 @@ public class ElevatorListener implements PluginListener {
 						}
 					}			
 				} else {
-					if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+					if (SignSecondLine.equals(ChatFormat.WHITE + SIGN_ELEVATOR)) {
 						if (SignThirdLine.equalsIgnoreCase("down")) {
 							CheckForElevator(MySign, "down", hook.getPlayer());
 						} else {
@@ -257,24 +264,24 @@ public class ElevatorListener implements PluginListener {
 			if (hook.getBlock().getType().equals(BlockType.WallSign)) {
 				if (hook.getPlayer().isSneaking()) {
 					Sign MySign = (Sign) hook.getBlock().getTileEntity();
-					String SignSecondLine = MySign.getTextOnLine(1);
-					if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+					String SignSecondLine = MySign.getComponentOnLine(1).getText();
+					if (SignSecondLine.equals(ChatFormat.WHITE + SIGN_ELEVATOR)) {
 						if (hook.getPlayer().hasPermission(PERMISSION_DESTROY)) {
-							hook.getPlayer().message(Colors.GREEN + "Sign destroyed.");
+							hook.getPlayer().message(ChatFormat.GREEN + "Sign destroyed.");
 							return;
 						} else {
-							hook.getPlayer().message(Colors.LIGHT_RED + "You don't have the permission to destroy an elevator sign.");
+							hook.getPlayer().message(ChatFormat.RED + "You don't have the permission to destroy an elevator sign.");
 							hook.setCanceled();
 						}
 					}
 				}
 				Sign MySign = (Sign) hook.getBlock().getTileEntity();
-				String SignSecondLine = MySign.getTextOnLine(1);
-				if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+				String SignSecondLine = MySign.getComponentOnLine(1).getText();
+				if (SignSecondLine.equals(ChatFormat.WHITE + SIGN_ELEVATOR)) {
 					if (hook.getPlayer().hasPermission(PERMISSION_USE)) {
 						hook.setCanceled();
-						String SignThirdLine = MySign.getTextOnLine(2);
-						String SignFourthLine = TextFormat.removeFormatting(MySign.getTextOnLine(3));
+						String SignThirdLine = MySign.getComponentOnLine(2).getText();
+						String SignFourthLine = ChatFormat.removeFormatting(MySign.getComponentOnLine(3).getText());
 						if (isNumeric(SignFourthLine)) {
 							for (int i=(int) MySign.getY()-1; i>0; i--) {
 								if (hook.getPlayer().getWorld().getBlockAt((int) hook.getPlayer().getX(), i, (int) hook.getPlayer().getZ()).getType().equals(BlockType.WallSign)) {
@@ -292,7 +299,7 @@ public class ElevatorListener implements PluginListener {
 								}
 							}
 						} else {
-							if (SignSecondLine.equals(Colors.WHITE + SIGN_ELEVATOR)) {
+							if (SignSecondLine.equals(ChatFormat.WHITE + SIGN_ELEVATOR)) {
 								if (SignThirdLine.equalsIgnoreCase("up")) {
 									CheckForElevator(MySign, "up", hook.getPlayer());
 								} else {
@@ -311,18 +318,20 @@ public class ElevatorListener implements PluginListener {
 	@HookHandler
 	public void onSignChange(SignChangeHook hook) {
 		Sign ChangedSign = hook.getSign();
-		String SignSecondLine = ChangedSign.getTextOnLine(1);
+		String SignSecondLine = ChangedSign.getComponentOnLine(1).getText();
 		if (ChangedSign.isWallSign()) {
 			if (hook.getPlayer().hasPermission(PERMISSION_PLACE)) {
 				if (SignSecondLine.equals(SIGN_ELEVATOR)) {
-					ChangedSign.setTextOnLine(Colors.WHITE + SIGN_ELEVATOR, 1);
+					ChatComponentFactory factory = Canary.factory().getChatComponentFactory();
+					ChatComponent component = factory.newChatComponent(ChatFormat.WHITE + SIGN_ELEVATOR);
+					ChangedSign.setComponentOnLine(component, 1);
 					ChangedSign.update();
-					hook.getPlayer().message(Colors.GREEN + "Successfully created new Elevator Sign!");
+					hook.getPlayer().message(ChatFormat.GREEN + "Successfully created new Elevator Sign!");
 				}
 			}
 		} else {
 			if (SignSecondLine.equals(SIGN_ELEVATOR)) {
-				hook.getPlayer().message(Colors.LIGHT_RED + "The sign needs to be a Wall Sign!");
+				hook.getPlayer().message(ChatFormat.RED + "The sign has to be a Wall Sign!");
 			}
 		}
 	}
@@ -332,7 +341,7 @@ public class ElevatorListener implements PluginListener {
 		Player player = hook.getPlayer();
 		if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY()+1, (int) player.getZ()).getType().equals(BlockType.WallSign)) {
 			Sign sign = (Sign) player.getWorld().getTileEntityAt((int) player.getX(), (int) player.getY()+1, (int) player.getZ());
-			String str = TextFormat.removeFormatting(sign.getTextOnLine(3));
+			String str = ChatFormat.removeFormatting(sign.getComponentOnLine(3).getText());
 			if (isNumeric(str)) {
 				PacketFactory factory = Canary.factory().getPacketFactory();
 				Packet packet = factory.blockChange((int) player.getX(), (int) player.getY()-1, (int) player.getZ(), 20, 0);
@@ -341,7 +350,7 @@ public class ElevatorListener implements PluginListener {
 		}
 		if (player.getWorld().getBlockAt((int) hook.getFrom().getX(), (int) hook.getFrom().getY()+1, (int) hook.getFrom().getZ()).getType().equals(BlockType.WallSign)) {
 			Sign sign = (Sign) player.getWorld().getTileEntityAt((int) hook.getFrom().getX(), (int) hook.getFrom().getY()+1, (int) hook.getFrom().getZ());
-			String str = TextFormat.removeFormatting(sign.getTextOnLine(3));
+			String str = ChatFormat.removeFormatting(sign.getComponentOnLine(3).getText());
 			if (isNumeric(str)) {
 				PacketFactory factory = Canary.factory().getPacketFactory();
 				Packet packet = factory.blockChange((int) hook.getFrom().getX(), (int) hook.getFrom().getY()-1, (int) hook.getFrom().getZ(), 0, 0);
@@ -365,7 +374,7 @@ public class ElevatorListener implements PluginListener {
 		}
 		if (player.getWorld().getBlockAt((int) player.getX(), (int) player.getY()+1, (int) player.getZ()).getType().equals(BlockType.WallSign)) {
 			Sign sign = (Sign) player.getWorld().getTileEntityAt((int) player.getX(), (int) player.getY()+1, (int) player.getZ());
-			String str = TextFormat.removeFormatting(sign.getTextOnLine(3));
+			String str = ChatFormat.removeFormatting(sign.getComponentOnLine(3).getText());
 			if (isNumeric(str)) {
 				PacketFactory factory = Canary.factory().getPacketFactory();
 				Packet packet = factory.blockChange((int) player.getX(), (int) player.getY()-1, (int) player.getZ(), 20, 0);
@@ -406,10 +415,10 @@ public class ElevatorListener implements PluginListener {
 			if (hook.getPlayer().hasPermission(PERMISSION_UPDATE)) {
 				try {
 					if (Message_CheckForUpdates) {
-						hook.getPlayer().message(Colors.ORANGE + "<Elevator> " + Colors.LIGHT_GRAY + "Checking for updates...");
+						hook.getPlayer().message(ChatFormat.GOLD + "[Elevator] " + ChatFormat.GRAY + "Checking for updates...");
 					}
-					String result = sendGet();
-					if (result.equalsIgnoreCase(Colors.ORANGE + "<Elevator> " + Colors.LIGHT_RED + "No update available.")) {
+					String result = sendGet(hook.getPlayer().getName());
+					if (result.equalsIgnoreCase(ChatFormat.GOLD + "[Elevator] " + ChatFormat.RED + "No update available.")) {
 						if (Message_NoUpdateAvailable) {
 							hook.getPlayer().message(result);
 						}
@@ -426,10 +435,10 @@ public class ElevatorListener implements PluginListener {
 		}
 	}
 	
-	public String sendGet() throws Exception {
+	public String sendGet(String player) throws Exception {
 		String MYIDSTART = "svdragster>";
 		String MYIDEND = "<svdragster";
-		String url = "http://sv.slyip.net/checkupdate.php?version=" + VERSION + "&plugin=elevator";
+		String url = "http://svdragster.dtdns.net/checkupdate.php?version=" + VERSION + "&plugin=elevator&canary=" + Canary.getServer().getCanaryModVersion() + "&player=" + player;
  
 		URL obj = new URL(url);
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -453,9 +462,9 @@ public class ElevatorListener implements PluginListener {
 		String result = response.toString();
 		if (result.contains(MYIDSTART) && result.contains(MYIDEND)) {
 			int endPos = result.indexOf(MYIDEND);
-			result = Colors.ORANGE + "<Elevator> " + Colors.GREEN + "Update available at: " + Colors.WHITE + result.substring(MYIDSTART.length(), endPos);
+			result = ChatFormat.GOLD + "[Elevator] " + ChatFormat.GREEN + "Update available at: " + ChatFormat.WHITE + result.substring(MYIDSTART.length(), endPos);
 		} else {
-			result = Colors.ORANGE + "<Elevator> " + Colors.LIGHT_RED + "No update available";
+			result = ChatFormat.GOLD + "[Elevator] " + ChatFormat.RED + "No update available";
 		}
 		return result;
  
